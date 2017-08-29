@@ -16,26 +16,35 @@ def get_character_movies_from_api(character)
   # this collection will be the argument given to `parse_character_movies`
   #  and that method will do some nice presentation stuff: puts out a list
   #  of movies by title. play around with puts out other info about a given film.
-  movies_apis = []
-  character_hash["results"].each do |hash|
-    if hash["name"] == character
-      movies_apis = hash["films"]
+
+  while character_hash #while character_hash is a hash (aka not nil) run this code
+    film_urls = character_hash["results"].find do |hash| #returns the hash if it finds the character
+      hash["name"].downcase == character
     end
+    if film_urls
+      return film_urls["films"].map do |film| #if there is data, it returns this and breaks the loop, otherwise it keeps looping
+        JSON.parse(RestClient.get(film))
+      end
+    end
+    character_hash = character_hash["next"] ? JSON.parse(RestClient.get(character_hash["next"])) : nil #before the loop restarts, it checks if the character_hash["next"] has a url.
+    #If it does, then it sets it equal to that variable.  Otherwise, it sets it to nil so that the while loop breaks
   end
 end
 
-def parse_character_movies(films_hash)
+def parse_character_movies(films_array)
   # some iteration magic and puts out the movies in a nice list
-  films_array = []
-  films_hash.each do |film|
-    films_array << JSON.parse(RestClient.get(film))
+  films_array.each do |film|
+    puts film["title"]
   end
-  films_array
 end
 
 def show_character_movies(character)
-  films_hash = get_character_movies_from_api(character)
-  parse_character_movies(films_hash)
+  films_array = get_character_movies_from_api(character)
+  if !films_array
+    puts "That's not a character!"
+  else
+    parse_character_movies(films_array)
+  end
 end
 
 ## BONUS
